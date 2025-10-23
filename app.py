@@ -8,6 +8,22 @@ import pandas as pd # Needed if you load data structures
 import numpy as np # Needed if you load data structures
 # --- Pre-computation and Model Loading ---
 
+def download_nltk_data():
+    """Checks for and downloads NLTK data if not found."""
+    try:
+        nltk.data.find('corpora/stopwords')
+    except LookupError:
+        print("Downloading NLTK stopwords...")
+        nltk.download('stopwords')
+    try:
+        nltk.data.find('tokenizers/punkt')
+    except LookupError:
+        print("Downloading NLTK punkt...")
+        nltk.download('punkt')
+
+# --- Run the download check when the script starts ---
+download_nltk_data()
+
 app = Flask(__name__)
 
 try:

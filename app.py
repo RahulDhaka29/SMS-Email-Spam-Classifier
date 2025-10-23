@@ -1,4 +1,4 @@
-# --- Spam Classifier Backend (NLTK Fix 3 - Runtime Download) ---
+# --- Spam Classifier Backend (NLTK Fix 4 - Added punkt_tab) ---
 from flask import Flask, render_template, request
 import pickle
 import string
@@ -20,18 +20,24 @@ nltk.data.path.append(nltk_data_path)
 # --- Function to download NLTK data to the specified path ---
 def download_nltk_data():
     """Checks for and downloads NLTK data to the specified path if not found."""
-    try:
-        nltk.data.find('corpora/stopwords', paths=[nltk_data_path])
-        print("NLTK stopwords found.")
-    except LookupError:
-        print(f"Downloading NLTK stopwords to {nltk_data_path}...")
-        nltk.download('stopwords', download_dir=nltk_data_path)
-    try:
-        nltk.data.find('tokenizers/punkt', paths=[nltk_data_path])
-        print("NLTK punkt found.")
-    except LookupError:
-        print(f"Downloading NLTK punkt to {nltk_data_path}...")
-        nltk.download('punkt', download_dir=nltk_data_path)
+    # List of required NLTK packages
+    packages = ['stopwords', 'punkt', 'punkt_tab'] # <-- Added 'punkt_tab' here
+
+    for package in packages:
+        try:
+            # Determine the correct resource type (corpora or tokenizers)
+            if package == 'stopwords':
+                resource_path = f'corpora/{package}'
+            else: # punkt and punkt_tab are tokenizers
+                resource_path = f'tokenizers/{package}'
+
+            # Check if the package exists in our specified path
+            nltk.data.find(resource_path, paths=[nltk_data_path])
+            print(f"NLTK package '{package}' found.")
+        except LookupError:
+            print(f"Downloading NLTK package '{package}' to {nltk_data_path}...")
+            # Download the package to the specified directory
+            nltk.download(package, download_dir=nltk_data_path)
 
 # --- Run the download check when the script starts ---
 download_nltk_data()
@@ -93,9 +99,9 @@ def predict():
             prediction_text = "Please enter a message to classify."
         else:
             try:
-                # Add extra check here for safety
-                if 'punkt' not in nltk.data.path and nltk_data_path not in nltk.data.path:
-                     nltk.data.path.append(nltk_data_path) # Ensure path is added if missed
+                # Ensure NLTK path is available just in case
+                if nltk_data_path not in nltk.data.path:
+                     nltk.data.path.append(nltk_data_path)
 
                 transformed_sms = transform_text(message)
 
@@ -115,8 +121,8 @@ def predict():
                         is_spam_flag = False
 
             except LookupError as le:
-                 # Catching the specific error again just in case
-                 prediction_text = f"NLTK data missing: {le}. Please ensure deployment downloads data."
+                 # Catching the specific error again
+                 prediction_text = f"NLTK data missing: {le}. Please check deployment setup."
                  print(f"LookupError during prediction: {le}")
             except Exception as e:
                 prediction_text = f"An error occurred during prediction: {e}"
